@@ -3,7 +3,7 @@ import requests
 
 app = Flask(__name__)
 
-ESP32_URL = "http://192.168.29.88:81/stream"
+ESP32_URL = "http://192.168.24.88:81/stream"
 
 @app.route("/")
 def home():
