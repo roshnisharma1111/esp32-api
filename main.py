@@ -24,20 +24,26 @@ def upload():
 def live():
 
     def generate():
+
+        last_frame = None
+
         while True:
 
             with frame_lock:
                 frame = latest_frame
 
-            if frame is not None:
-                yield(
+            if frame is not None and frame != last_frame:
+
+                last_frame = frame
+
+                yield (
                     b'--frame\r\n'
-                    b'Content-Type: image/jpeg\r\n\r\n' +
-                    frame +
+                    b'Content-Type: image/jpeg\r\n\r\n'
+                    + frame +
                     b'\r\n'
                 )
 
-            time.sleep(0.1)
+            time.sleep(0.02)
 
     return Response(
         generate(),
