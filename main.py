@@ -1,29 +1,53 @@
-from fastapi import FastAPI
+from flask import Flask, request, Response
+import threading
+import time
 
-app = FastAPI()
+app = Flask(__name__)
 
-camera = False
+latest_frame = None
+frame_lock = threading.Lock()
 
-@app.post("/camera/on")
-def camera_on():
-    global camera
-    camera = True
-    return {
-        "message": "Camera ON",
-        "camera": camera
-    }
 
-@app.post("/camera/off")
-def camera_off():
-    global camera
-    camera = False
-    return {
-        "message": "Camera OFF",
-        "camera": camera
-    }
+@app.route("/")
+def home():
+    return "Flask server running"
 
-@app.get("/status")
-def status():
-    return {
-        "camera": camera
-    }
+
+@app.route("/upload", methods=["POST"])
+def upload():
+
+    global latest_frame
+
+    with frame_lock:
+        latest_frame = request.data
+
+    return "Frame received"
+
+
+@app.route("/live")
+def live():
+
+    def generate():
+        while True:
+
+            with frame_lock:
+                frame = latest_frame
+
+            if frame:
+                yield (
+                    b'--frame\r\n'
+                    b'Content-Type: image/jpeg\r\n\r\n'
+                    + frame +
+                    b'\r\n'
+                )
+
+            time.sleep(0.05)
+
+    return Response(
+        generate(),
+        mimetype='multipart/x-mixed-replace; boundary=frame'
+    )
+
+
+if __name__ == "__main__":
+    app.run(host="0.0.0.0", port=5000)
